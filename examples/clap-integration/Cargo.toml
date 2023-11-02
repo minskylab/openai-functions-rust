@@ -9,7 +9,8 @@ edition = "2021"
 async-openai = "0.12.1"
 async-trait = "0.1.72"
 clap = { version = "4.3.19", features = ["derive"] }
-openai-func-enums = { path = "../../../openai-func-enums/openai-func-enums" }
+dotenv = "0.15.0"
+openai-func-enums = { path = "../../../openai-functions-rust/openai-func-enums" }
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1"
 tiktoken-rs = "0.4.2"

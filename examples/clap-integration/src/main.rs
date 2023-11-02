@@ -194,6 +194,8 @@ impl RoundingMode {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv::dotenv().ok();
+
     let cli = Cli::parse();
 
     cli.command.run().await.map_err(|e| {

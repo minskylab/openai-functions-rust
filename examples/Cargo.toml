@@ -1,6 +1,4 @@
 [workspace]
-members = [
-    "clap-integration",
-    "get-current-weather",
-]
+members = ["clap-integration", "get-current-weather"]
 
+resolver = "2"

@@ -79,23 +79,27 @@ pub fn enum_descriptor_derive(input: TokenStream) -> TokenStream {
             let _result = attr.parse_nested_meta(|meta| {
                 let content = meta.input;
 
-                while !content.is_empty() {
-                    if meta.path.is_ident("description") {
-                        let value = meta.value()?;
-                        if let Ok(Lit::Str(value)) = value.parse() {
-                            description = value.value();
-                        }
-                    } else if meta.path.is_ident("tokens") {
-                        let value = meta.value()?;
-                        if let Ok(Lit::Int(value)) = value.parse() {
-                            desc_tokens = value.base10_parse::<usize>()?;
-                            return Ok(());
-                        }
-                    }
-                    return Ok(());
+                if content.is_empty() {
+                    // return Err(meta.error("expected `description` and `tokens`"));
+                    return Err(meta.error("unrecognized my_attribute"));
                 }
 
-                Err(meta.error("unrecognized my_attribute"))
+                // while !content.is_empty() {
+                if meta.path.is_ident("description") {
+                    let value = meta.value()?;
+                    if let Ok(Lit::Str(value)) = value.parse() {
+                        description = value.value();
+                    }
+                } else if meta.path.is_ident("tokens") {
+                    let value = meta.value()?;
+                    if let Ok(Lit::Int(value)) = value.parse() {
+                        desc_tokens = value.base10_parse::<usize>()?;
+                        return Ok(());
+                    }
+                }
+
+                Ok(())
+                // }
             });
 
             if _result.is_err() {
@@ -321,11 +325,15 @@ pub fn generate_value_arg_info(input: TokenStream) -> TokenStream {
     let tokens = input.into_iter().collect::<Vec<TokenTree>>();
     // println!("Got here 200");
     for token in tokens {
-        match &token {
-            TokenTree::Ident(ident) => {
-                type_and_name_values.push(ident.to_string());
-            }
-            _ => {}
+        // match &token {
+        //     TokenTree::Ident(ident) => {
+        //         type_and_name_values.push(ident.to_string());
+        //     }
+        //     _ => {}
+        // }
+
+        if let TokenTree::Ident(ident) = &token {
+            type_and_name_values.push(ident.to_string());
         }
     }
     // let arg_name_ident = parse_macro_input!(arg_name as Ident);
@@ -373,7 +381,8 @@ pub fn generate_value_arg_info(input: TokenStream) -> TokenStream {
 
     // output.into()
     let gen = quote! {};
-    return gen.into();
+
+    gen.into()
 }
 /// This procedural macro attribute is used to specify a description for an enum variant.
 ///
@@ -453,18 +462,22 @@ fn impl_function_call_response(ast: &DeriveInput) -> proc_macro2::TokenStream {
                         let attribute_parsed = attr.parse_nested_meta(|meta| {
                             let content = meta.input;
 
-                            while !content.is_empty() {
-                                if meta.path.is_ident("description") {
-                                    let value = meta.value()?;
-                                    if let Ok(Lit::Str(value)) = value.parse() {
-                                        description = value.value();
-                                        desc_tokens = calculate_token_count(description.as_str());
-                                    }
-                                }
-
-                                return Ok(());
+                            if content.is_empty() {
+                                // return Err(meta.error("expected `description` and `tokens`"));
+                                return Err(meta.error("unrecognized my_attribute"));
                             }
-                            Err(meta.error("unrecognized my_attribute"))
+
+                            // while !content.is_empty() {
+                            if meta.path.is_ident("description") {
+                                let value = meta.value()?;
+                                if let Ok(Lit::Str(value)) = value.parse() {
+                                    description = value.value();
+                                    desc_tokens = calculate_token_count(description.as_str());
+                                }
+                            }
+
+                            Ok(())
+                            // }
                         });
                         match attribute_parsed {
                             Ok(_attribute_parsed) => {}
@@ -564,38 +577,38 @@ fn impl_function_call_response(ast: &DeriveInput) -> proc_macro2::TokenStream {
 
             };
 
-            return gen.into();
+            gen
         }
         _ => panic!("FunctionCallResponse can only be derived for enums"),
     }
 }
 
-/// The `SubcommandGPT` procedural macro is used to derive a structure 
+/// The `SubcommandGPT` procedural macro is used to derive a structure
 /// which encapsulates various chat completion commands.
-/// 
+///
 /// This macro should be applied to an enum. It generates various supporting
 /// structures and methods, including structures representing the command arguments,
 /// methods for converting between the argument structures and the original enum,
-/// JSON conversion methods, and an implementation of the original enum that provides 
+/// JSON conversion methods, and an implementation of the original enum that provides
 /// methods for executing the commands and dealing with the responses.
 ///
 /// Each variant of the original enum will be converted into a corresponding structure,
 /// and each field in the variant will become a field in the generated structure.
 /// The generated structures will derive `serde::Deserialize` and `Debug` automatically.
-/// 
-/// This macro also generates methods for calculating the token count of a string and 
+///
+/// This macro also generates methods for calculating the token count of a string and
 /// for executing commands based on function calls received from the chat API.
-/// 
-/// The types of fields in the enum variants determine how the corresponding fields in the 
-/// generated structures are treated. For example, fields of type `String` or `&str` are 
-/// converted to JSON value arguments with type `"string"`, while fields of type `u8`, `u16`, 
-/// `u32`, `u64`, `usize`, `i8`, `i16`, `i32`, `i64`, `isize`, `f32` or `f64` are converted 
-/// to JSON value arguments with type `"integer"` or `"number"` respectively. 
+///
+/// The types of fields in the enum variants determine how the corresponding fields in the
+/// generated structures are treated. For example, fields of type `String` or `&str` are
+/// converted to JSON value arguments with type `"string"`, while fields of type `u8`, `u16`,
+/// `u32`, `u64`, `usize`, `i8`, `i16`, `i32`, `i64`, `isize`, `f32` or `f64` are converted
+/// to JSON value arguments with type `"integer"` or `"number"` respectively.
 /// For fields with a tuple type, currently this macro simply prints that the field is of a tuple type.
 /// For fields with an array type, they are converted to JSON value arguments with type `"array"`.
 ///
 /// When running the chat command, a custom system message can be optionally provided.
-/// If provided, this message will be used as the system message in the chat request. 
+/// If provided, this message will be used as the system message in the chat request.
 /// If not provided, a default system message will be used.
 ///
 /// If the total token count of the request exceeds a specified limit, an error will be returned.
@@ -629,7 +642,7 @@ pub fn derive_subcommand_gpt(input: TokenStream) -> TokenStream {
         let mut variant_desc_tokens = 0_usize;
 
         for variant_attrs in &variant.attrs {
-            let description = get_comment_from_attr(&variant_attrs);
+            let description = get_comment_from_attr(variant_attrs);
             if let Some(description) = description {
                 variant_desc = description;
                 variant_desc_tokens = calculate_token_count(variant_desc.as_str());
@@ -965,7 +978,7 @@ pub fn derive_subcommand_gpt(input: TokenStream) -> TokenStream {
     };
     // println!("There was an commands:  {:#?}", gen.to_string());
 
-    return gen.into();
+    gen.into()
 }
 
 fn get_comment_from_attr(attr: &Attribute) -> Option<String> {
@@ -1021,7 +1034,7 @@ fn get_comment_from_attr(attr: &Attribute) -> Option<String> {
 /// Note: This function can fail if the `cl100k_base` tokenizer is not properly initialized or the text cannot be tokenized.
 fn calculate_token_count(text: &str) -> usize {
     let bpe = cl100k_base().unwrap();
-    bpe.encode_ordinary(&text).len()
+    bpe.encode_ordinary(text).len()
 }
 
 /// Convert a camelCase or PascalCase string into a snake_case string.

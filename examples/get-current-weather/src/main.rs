@@ -15,6 +15,8 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    dotenv::dotenv().ok();
+
     let client = Client::new();
 
     let function_args =

@@ -68,7 +68,7 @@ impl Error for CommandError {}
 
 impl From<OpenAIError> for CommandError {
     fn from(error: OpenAIError) -> Self {
-        CommandError::new(&format!("OpenAI Error: {}", error.to_string()))
+        CommandError::new(&format!("OpenAI Error: {}", error))
     }
 }
 
@@ -152,10 +152,12 @@ pub fn get_function_chat_completion_args(
     };
 
     for value in values {
-        let parameters = match value.get("parameters") {
-            Some(parameters) => Some(parameters.clone()),
-            None => None,
-        };
+        // let parameters = match value.get("parameters") {
+        //     Some(parameters) => Some(parameters.clone()),
+        //     None => None,
+        // };
+
+        let parameters = value.get("parameters").cloned();
 
         let description = value
             .get("description")
